@@ -128,7 +128,6 @@ nodes([Ip | T], Port) ->
             nodes(T, Port)
     end.
 
--spec filter_datacenter([{<<_:8,_:8,_:8,_:8>>, binary()}]) -> [{<<_:8,_:8,_:8,_:8>>, binary()}].
 filter_down_nodes(Nodes) ->
     case ?GET_ENV(ignore_rpc_ips, []) of
         [] -> Nodes;
