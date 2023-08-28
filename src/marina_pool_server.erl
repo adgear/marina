@@ -9,7 +9,8 @@
 -export([
     init/3,
     handle_msg/2,
-    terminate/2
+    terminate/2,
+    nodes/2
 ]).
 
 -define(MSG_BOOTSTRAP, bootstrap_pool).
@@ -115,7 +116,7 @@ nodes([], _Port) ->
 nodes([Ip | T], Port) ->
     case peers(Ip, Port) of
         {ok, Rows, Datacenter} ->
-            case filter_datacenter(Rows, Datacenter) of
+            case filter_down_nodes(filter_datacenter(Rows, Datacenter)) of
                 [] ->
                     nodes(T, Port);
                 Nodes ->
@@ -126,6 +127,17 @@ nodes([Ip | T], Port) ->
                 "bootstrap error: ~p~n", [Reason]),
             nodes(T, Port)
     end.
+
+filter_down_nodes(Nodes) ->
+    case ?GET_ENV(ignore_rpc_ips, []) of
+        [] -> Nodes;
+        IgnoreRpcIps ->
+            IRIB = lists:map(fun(Ip) ->
+                iolist_to_binary([list_to_integer(X) || X <- string:tokens(Ip, ".")])
+            end, IgnoreRpcIps),
+            lists:filter(fun({RpcAddress, _}) -> not(lists:member(RpcAddress, IRIB)) end, Nodes)
+    end.
+    
 
 peers(Ip, Port) ->
     case connect(Ip, Port) of
